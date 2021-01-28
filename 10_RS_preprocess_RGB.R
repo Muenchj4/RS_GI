@@ -27,19 +27,25 @@ rm(list = ls())
 library(gtools)
 require(envimaR)
 
+# 1 - source files
+#-----------------
+
 ## source setup file 
 ## NOTE you MUST adapt the last line according to your needs
 cat(":::: sourcing setup file \n")
-source(file.path(envimaR::alternativeEnvi(root_folder = "D:/Benutzer/Muench/edu/mpg-envinsys-plygrnd",
+source(file.path(envimaR::alternativeEnvi(root_folder = "C:/Users/jomue/edu/mpg-envinsys-plygrnd",
                                           alt_env_id = "COMPUTERNAME",
                                           alt_env_value = "PCRZP",
                                           alt_env_root_folder = "F:/BEN/edu/mpg-envinsys-plygrnd"),
                  "/src/000_setup.R"))
 
 # 2 - define variables
-#--------------------------------------------
+#---------------------
+
 # create deprecated proj4 projection string
 crs_rgb=sp::CRS("+init=epsg:25832")
+
+
 # modify cropping extent according to example training data as provided by: 
 # https://github.com/HannaMeyer/OpenGeoHub_2019/blob/master/practice/data/
 # Download github archive
@@ -56,14 +62,14 @@ if(!file.exists(paste0(envrmt$path_auxdata,basename(url)))) {
 # read and project the training data polygons
 trainSites <- sf::read_sf(file.path(envrmt$path_auxdata,"trainingSites.shp"))
 trainSites <- sf::st_transform(trainSites,crs=crs_rgb)
+
 # set the cropping extent
 ext <- extent(trainSites)
-source("D:/Benutzer/Muench/edu/mpg-envinsys-plygrnd/src/Fun/fun_destripe_RGB.R")
-source("D:/Benutzer/Muench/edu/mpg-envinsys-plygrnd/src/Fun/fun_get_crayon.R")
-source("D:/Benutzer/Muench/edu/mpg-envinsys-plygrnd/src/Fun/fun_merge_rgb.R")
+
 # define file name and location
 mergename=file.path(envrmt$path_aerial,"MOF_rgb_merged.tif")
 outname=file.path(envrmt$path_aerial,"MOF_rgb.tif")
+
 # start processing 
 #-----------------------------------------
 
@@ -71,10 +77,10 @@ outname=file.path(envrmt$path_aerial,"MOF_rgb.tif")
 # get list of files
 # NOTE adapt the wildcard in the glob2rx call if necessary
 tif_files = list.files(envrmt$path_aerial_org, pattern = glob2rx("4*.tif"), full.names = TRUE)
-
-merge_rgb(files=tif_files,proj4=crs_rgb,output=mergename,cropoutput=outname,ext=ext)
 destripe_rgb(files = tif_files,
              envrmt = envrmt)
+
+
 ##-- if the merge file exist just load it for cropping
 if(length(mergename)>0){
   merged_mof = raster::stack(mergename)
@@ -89,10 +95,12 @@ if(length(mergename)>0){
                          proj4 = crs_rgb,
                          ext = ext)
 }
+
 # cropping it
 if(!file.exists(outname)){
   cat("crop AOI\n")
-  aoi_RGB  =  crop(merged_mof, ext)
+  aoi_RGB  =  crop(merged_mof, ext)	
+  
   # save the croped raster
   raster::writeRaster(aoi_RGB ,
                       outname,
@@ -103,3 +111,4 @@ if(!file.exists(outname)){
 cat(getCrayon()[[3]](":::: finished ",scriptName::current_filename(),"\n"))
 cat(getCrayon()[[1]](":::: merged file is saved at: ",mergename,"\n"))
 cat(getCrayon()[[1]](":::: cropped file is saved at: ",outname ,"\n"))
+plot(merged_mof)
